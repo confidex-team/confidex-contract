@@ -6,7 +6,6 @@ import "@inco/lightning/src/Lib.sol";
 import "@openzeppelin/contracts/access/Ownable2Step.sol";
 
 contract ConfidentialERC20 is Ownable2Step {
-    
     // Events for Transfer, Approval, Mint, and Decryption
     event Transfer(address indexed from, address indexed to);
     event Approval(address indexed owner, address indexed spender);
@@ -116,7 +115,7 @@ contract ConfidentialERC20 is Ownable2Step {
     ) public view virtual returns (euint256) {
         return _allowance(owner, spender);
     }
-    
+
     // Internal function to retrieve an allowance handle
     function _allowance(
         address owner,

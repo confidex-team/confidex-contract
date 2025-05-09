@@ -3,10 +3,11 @@ pragma solidity ^0.8.24;
 
 import "@inco/lightning/src/Lib.sol";
 import "@openzeppelin/contracts/access/Ownable2Step.sol";
+import "./ConfidentialERC20.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
-contract ConfiDex is Ownable2Step {
+contract ConfiDex is ConfidentialERC20 {
     // Events
     event Deposited(address indexed user, address token, uint256 amount);
     event Withdrawn(address indexed user, address token, uint256 amount);
@@ -22,8 +23,8 @@ contract ConfiDex is Ownable2Step {
     mapping(bytes32 => ClaimInfo) private _claims;
     mapping(address => mapping(address => euint256)) internal balances; // token => user => balance
 
-    // Constructor
-    constructor(address _trustedSigner) Ownable(msg.sender) {
+    // Constructor, Inherited from Ownable2Step to call inherited functions from Ownable
+    constructor(address _trustedSigner) {
         trustedSigner = _trustedSigner;
     }
 
@@ -38,7 +39,9 @@ contract ConfiDex is Ownable2Step {
         bytes calldata encryptedAmount
     ) external {
         euint256 amount = e.newEuint256(encryptedAmount, msg.sender);
-        ebool isValidAmount = e.gt(amount, e.newEuint256(0, msg.sender));
+        bytes memory encryptedZero = e.encrypt(0, msg.sender);
+        euint256 zero = e.newEuint256(encryptedZero, msg.sender);
+        ebool isValidAmount = e.gt(amount, zero);
         require(e.decrypt(isValidAmount), "Invalid amount");
 
         // Transfer the encrypted amount from the user to this contract

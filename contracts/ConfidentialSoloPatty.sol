@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/access/Ownable2Step.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
-contract ConfidentialSoloPatty is Ownable2Step {
+contract ConfiDex is Ownable2Step {
     // Events
     event Deposited(address indexed user, address token, uint256 amount);
     event Withdrawn(address indexed user, address token, uint256 amount);

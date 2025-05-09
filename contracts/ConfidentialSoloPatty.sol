@@ -27,7 +27,7 @@ contract ConfidentialSoloPatty is Ownable2Step {
         trustedSigner = _trustedSigner;
     }
 
-    modifier onlyOwner() {
+    modifier onlyOwner() override {
         require(msg.sender == owner(), "Not authorized");
         _;
     }

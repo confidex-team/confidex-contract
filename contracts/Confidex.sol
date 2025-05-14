@@ -3,6 +3,8 @@ pragma solidity ^0.8.24;
 import "./ConfidentialERC20.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 contract Confidex is ConfidentialERC20 {
     ConfidentialERC20 public confidentialToken;
@@ -12,7 +14,6 @@ contract Confidex is ConfidentialERC20 {
         uint96 lastClaimTime;
     }
 
-    address public immutable owner;
     address public immutable trustedSigner;
     mapping(bytes32 => ClaimInfo) private _claims;
 
@@ -20,30 +21,26 @@ contract Confidex is ConfidentialERC20 {
     event Withdrawn(address indexed user, address token, uint256 amount);
 
     constructor(address _trustedSigner) {
-        owner = msg.sender;
         trustedSigner = _trustedSigner;
     }
 
-    modifier onlyOwner() {
-        require(msg.sender == owner, "Not authorized");
+    modifier onlyOwner() override {
+        require(msg.sender == owner(), "Not authorized");
         _;
     }
 
     /// @notice Users deposit tokens into the contract (TEE listens off-chain)
-    function depositTokens(
-        address token,
-        bytes calldata encryptedAmount
-    ) external {
+    function depositTokens(address token, euint256 encryptedAmount) external {
         // Create encrypted zero for comparison
-        bytes memory encryptedZero = e.encrypt(0, msg.sender);
-        euint256 zero = e.newEuint256(encryptedZero, msg.sender);
-
-        // Check if amount is greater than zero
-        ebool isValidAmount = e.gt(encryptedAmount, zero);
-        require(e.decrypt(isValidAmount), "Invalid amount");
+        euint256 encryptedZero = e.asEuint256(0);
+        // require(e.gt(encryptedAmount, encryptedZero), "Invalid amount");
 
         // Transfer the encrypted amount from user to contract
-        ConfidentialERC20(token).transfer(address(this), encryptedAmount);
+        ConfidentialERC20(token).transferFrom(
+            msg.sender,
+            address(this),
+            encryptedAmount
+        );
 
         emit Deposited(msg.sender, token, 0); // Amount is encrypted, so we emit 0
     }
@@ -67,7 +64,7 @@ contract Confidex is ConfidentialERC20 {
         claim.lastClaimTime = uint96(block.timestamp);
 
         // ✅ Use safeTransfer
-        IERC20(token).safeTransfer(user, amount);
+        SafeERC20.safeTransfer(IERC20(token), user, amount);
 
         emit Withdrawn(user, token, amount);
     }

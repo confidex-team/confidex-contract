@@ -20,7 +20,11 @@ contract Confidex is ConfidentialERC20 {
     event Deposited(address indexed user, address token, uint256 amount);
     event Withdrawn(address indexed user, address token, uint256 amount);
 
-    constructor(address _trustedSigner) {
+    constructor(
+        address _trustedSigner,
+        string memory name,
+        string memory symbol
+    ) ConfidentialERC20(name, symbol) {
         trustedSigner = _trustedSigner;
     }
 

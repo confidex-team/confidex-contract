@@ -22,9 +22,9 @@ contract ConfidentialERC20 is Ownable2Step {
     mapping(address => mapping(address => euint256)) internal allowances;
     mapping(uint256 => address) internal requestIdToUserAddress;
 
-    constructor() Ownable(msg.sender) {
-        _name = "Confidential USD";
-        _symbol = "cUSD";
+    constructor(string memory name, string memory symbol) Ownable(msg.sender) {
+        _name = name;
+        _symbol = symbol;
     }
 
     // Minting functions

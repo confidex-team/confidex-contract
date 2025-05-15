@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-contract Confidex is ConfidentialERC20 {
+contract Confidex is Ownable2Step {
     ConfidentialERC20 public confidentialToken;
 
     struct ClaimInfo {
@@ -20,11 +20,7 @@ contract Confidex is ConfidentialERC20 {
     event Deposited(address indexed user, address token, uint256 amount);
     event Withdrawn(address indexed user, address token, uint256 amount);
 
-    constructor(
-        address _trustedSigner,
-        string memory name,
-        string memory symbol
-    ) ConfidentialERC20(name, symbol) {
+    constructor(address _trustedSigner) Ownable(msg.sender) {
         trustedSigner = _trustedSigner;
     }
 

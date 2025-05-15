@@ -41,6 +41,8 @@ contract Confidex is ConfidentialERC20 {
         euint256 encryptedZero = e.asEuint256(0);
         ebool isValidAmount = e.gt(encryptedAmount, encryptedZero);
 
+        e.allow(isValidAmount, address(this));
+
         // Just pass empty bytes since we're not using callbackData
         e.requestDecryption(
             isValidAmount,

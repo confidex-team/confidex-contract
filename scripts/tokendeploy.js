@@ -3,7 +3,7 @@ const hre = require("hardhat")
 async function main() {
   const [deployer] = await hre.viem.getWalletClients()
   const confiToken = await hre.viem.deployContract("ConfiToken", [
-    1000000, // initialSupply (1 million tokens)
+    1000000000000000000000000, // initialSupply (1 million tokens)
     "ConfiToken", // name
     "CFT", // symbol
   ])

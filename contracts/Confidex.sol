@@ -38,35 +38,26 @@ contract Confidex is ConfidentialERC20 {
         address token,
         euint256 encryptedAmount
     ) external {
-        // Create encrypted zero for comparison
         euint256 encryptedZero = e.asEuint256(0);
         ebool isValidAmount = e.gt(encryptedAmount, encryptedZero);
 
-        // Request decryption of the boolean
-        // The callback will be this.handleDecryption
-        // We pass the token and amount as callback data
+        // Just pass empty bytes since we're not using callbackData
         e.requestDecryption(
             isValidAmount,
             this.depositToken.selector,
-            abi.encode(token, encryptedAmount)
+            "" // empty bytes since we're not using it
         );
     }
 
-    // Callback function that will be called after decryption
+    // Modified callback function with direct parameters
     function depositToken(
-        uint256 requestId,
         bool isValidAmount,
-        bytes memory callbackData
+        address token,
+        euint256 encryptedAmount
     ) external {
         require(isValidAmount, "Amount must be greater than zero");
 
-        // Decode the callback data to get our original parameters
-        (address token, euint256 encryptedAmount) = abi.decode(
-            callbackData,
-            (address, euint256)
-        );
-
-        // Now we can safely transfer
+        // Now we can directly use token and encryptedAmount
         ConfidentialERC20(token).transferFrom(
             msg.sender,
             address(this),

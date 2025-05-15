@@ -30,35 +30,15 @@ contract Confidex is Ownable2Step {
     }
 
     /// @notice Users deposit tokens into the contract (TEE listens off-chain)
-    function depositTokenCheck(
-        address token,
-        euint256 encryptedAmount
-    ) external {
+
+    // Modified callback function with direct parameters
+    function depositToken(address token, euint256 encryptedAmount) external {
         euint256 encryptedZero = e.asEuint256(0);
         ebool isValidAmount = e.gt(encryptedAmount, encryptedZero);
 
         e.allow(isValidAmount, address(this));
 
-        // Just pass empty bytes since we're not using callbackData
-        e.requestDecryption(
-            isValidAmount,
-            this.depositToken.selector,
-            abi.encode(token, encryptedAmount) // Encode the parameters
-        );
-    }
-
-    // Modified callback function with direct parameters
-    function depositToken(
-        bool isValidAmount,
-        bytes memory callbackData
-    ) external {
-        require(isValidAmount, "Amount must be greater than zero");
-
-        // Decode the callback data
-        (address token, euint256 encryptedAmount) = abi.decode(
-            callbackData,
-            (address, euint256)
-        );
+        // require(isValidAmount, "Amount must be greater than zero");
 
         // Now we can use the decoded parameters
         ConfidentialERC20(token).transferFrom(

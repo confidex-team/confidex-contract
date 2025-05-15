@@ -34,19 +34,46 @@ contract Confidex is ConfidentialERC20 {
     }
 
     /// @notice Users deposit tokens into the contract (TEE listens off-chain)
-    function depositTokens(address token, euint256 encryptedAmount) external {
+    function depositTokenCheck(
+        address token,
+        euint256 encryptedAmount
+    ) external {
         // Create encrypted zero for comparison
         euint256 encryptedZero = e.asEuint256(0);
-        // require(e.gt(encryptedAmount, encryptedZero), "Invalid amount");
+        ebool isValidAmount = e.gt(encryptedAmount, encryptedZero);
 
-        // Transfer the encrypted amount from user to contract
+        // Request decryption of the boolean
+        // The callback will be this.handleDecryption
+        // We pass the token and amount as callback data
+        e.requestDecryption(
+            isValidAmount,
+            this.depositToken.selector,
+            abi.encode(token, encryptedAmount)
+        );
+    }
+
+    // Callback function that will be called after decryption
+    function depositToken(
+        uint256 requestId,
+        bool isValidAmount,
+        bytes memory callbackData
+    ) external {
+        require(isValidAmount, "Amount must be greater than zero");
+
+        // Decode the callback data to get our original parameters
+        (address token, euint256 encryptedAmount) = abi.decode(
+            callbackData,
+            (address, euint256)
+        );
+
+        // Now we can safely transfer
         ConfidentialERC20(token).transferFrom(
             msg.sender,
             address(this),
             encryptedAmount
         );
 
-        emit Deposited(msg.sender, token, 0); // Amount is encrypted, so we emit 0
+        emit Deposited(msg.sender, token, 0);
     }
 
     /// @notice Users withdraw funds with a signed message from the TEE

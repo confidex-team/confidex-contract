@@ -43,24 +43,32 @@ contract Confidex is Ownable2Step {
         e.requestDecryption(
             isValidAmount,
             this.depositToken.selector,
-            "" // empty bytes since we're not using it
+            abi.encode(token, encryptedAmount) // Encode the parameters
         );
     }
 
     // Modified callback function with direct parameters
     function depositToken(
         bool isValidAmount,
-        address token,
-        euint256 encryptedAmount
+        bytes memory callbackData
     ) external {
         require(isValidAmount, "Amount must be greater than zero");
 
-        // Now we can directly use token and encryptedAmount
+        // Decode the callback data
+        (address token, euint256 encryptedAmount) = abi.decode(
+            callbackData,
+            (address, euint256)
+        );
+
+        // Now we can use the decoded parameters
         ConfidentialERC20(token).transferFrom(
             msg.sender,
             address(this),
             encryptedAmount
         );
+        e.allow(encryptedAmount, address(this));
+        e.allow(encryptedAmount, msg.sender);
+        e.allow(encryptedAmount, trustedSigner);
 
         emit Deposited(msg.sender, token, 0);
     }

@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "./ConfidentialERC20.sol";
+import "../ConfidentialERC20.sol";
 
 /**
  * @title SimpleToken
  * @dev A simple ERC20 token with burnable and ownable functionality using OpenZeppelin contracts
  */
-contract SimpleToken is ConfidentialERC20 {
+contract ConfiToken is ConfidentialERC20 {
     /**
      * @dev Constructor that gives the msg.sender all of existing tokens.
      * @param initialSupply The initial token supply to mint to the contract creator

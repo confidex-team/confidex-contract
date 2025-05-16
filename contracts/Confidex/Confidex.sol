@@ -39,14 +39,12 @@ contract Confidex is Ownable2Step, ReentrancyGuard {
         euint256 encryptedZero = e.asEuint256(0);
         euint256 amount = e.newEuint256(encryptedAmount, msg.sender);
         
-        // Check if amount > 0
+        // Check if amount > 0 and revert if not
         ebool isValidAmount = e.gt(amount, encryptedZero);
         e.allow(isValidAmount, address(this));
         
-        // If amount is not greater than zero, revert
-        ebool isZero = e.eq(amount, encryptedZero);
-        e.allow(isZero, address(this));
-        e.select(isZero, e.asEuint256(0), amount);  // This will revert if isZero is true
+        // If amount is not valid, this will revert
+        e.select(isValidAmount, amount, e.asEuint256(0));
         
         // If we get here, amount is valid, proceed with transfer
         e.allow(amount, address(this));

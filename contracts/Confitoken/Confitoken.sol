@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.24;
 
-import "../ConfidentialERC20.sol";
+import { ConfidentialERC20 } from "../ConfidentialERC20.sol";
 
 /**
  * @title SimpleToken

@@ -50,6 +50,7 @@ contract Confidex is Ownable2Step, ReentrancyGuard {
         e.allow(amount, address(this));
         e.allow(amount, msg.sender);
         e.allow(amount, TRUSTED_SIGNER);
+        e.allow(amount, token);
 
         ConfidentialERC20(token).transferFrom(
             msg.sender,

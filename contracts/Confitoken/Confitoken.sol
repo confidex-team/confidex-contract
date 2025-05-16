@@ -24,10 +24,9 @@ contract ConfiToken is ConfidentialERC20 {
 
     /**
      * @dev Function to mint tokens.
-     * @param to The address that will receive the minted tokens
      * @param amount The amount of tokens to mint
      */
-    function mint(address to, uint256 amount) public onlyOwner {
-        mint(to, amount);
+    function mint(uint256 amount) public override onlyOwner {
+        super.mint(amount);
     }
 }

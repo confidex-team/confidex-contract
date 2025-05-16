@@ -1,12 +1,13 @@
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
 import "../ConfidentialERC20.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
-contract Confidex is Ownable2Step {
+contract Confidex is Ownable2Step, ReentrancyGuard {
     ConfidentialERC20 public confidentialToken;
 
     struct ClaimInfo {
@@ -17,58 +18,79 @@ contract Confidex is Ownable2Step {
     address public immutable trustedSigner;
     mapping(bytes32 => ClaimInfo) private _claims;
 
-    event Deposited(address indexed user, address token, uint256 amount);
-    event Withdrawn(address indexed user, address token, uint256 amount);
+    event Deposited(address indexed user, address token, bytes encryptedAmount);
+    event Withdrawn(address indexed user, address token, bytes encryptedAmount);
+
+    error InvalidAmount();
+    error InvalidSignature();
+    error AlreadyClaimed();
+    error InvalidToken();
 
     constructor(address _trustedSigner) Ownable(msg.sender) {
+        if (_trustedSigner == address(0)) revert InvalidToken();
         trustedSigner = _trustedSigner;
     }
 
     /// @notice Users deposit tokens into the contract (TEE listens off-chain)
-
-    // Modified callback function with direct parameters
-    function depositToken(address token, euint256 encryptedAmount) external {
+    function depositToken(address token, bytes calldata encryptedAmount) external nonReentrant {
+        if (token == address(0)) revert InvalidToken();
+        
         euint256 encryptedZero = e.asEuint256(0);
-        ebool isValidAmount = e.gt(encryptedAmount, encryptedZero);
-
+        euint256 amount = e.newEuint256(encryptedAmount, msg.sender);
+        ebool isValidAmount = e.gt(amount, encryptedZero);
         e.allow(isValidAmount, address(this));
 
-        // require(isValidAmount, "Amount must be greater than zero");
+        // Use e.select to handle the entire flow
+        euint256 transferAmount = e.select(isValidAmount, amount, encryptedZero);
+        e.allow(transferAmount, address(this));
+        e.allow(transferAmount, msg.sender);
+        e.allow(transferAmount, trustedSigner);
 
-        // Now we can use the decoded parameters
+        // If amount is zero, revert
+        ebool isZero = e.eq(transferAmount, encryptedZero);
+        e.allow(isZero, address(this));
+        e.select(isZero, e.asEuint256(0), amount);
+
         ConfidentialERC20(token).transferFrom(
             msg.sender,
             address(this),
             encryptedAmount
         );
-        e.allow(encryptedAmount, address(this));
-        e.allow(encryptedAmount, msg.sender);
-        e.allow(encryptedAmount, trustedSigner);
 
-        emit Deposited(msg.sender, token, 0);
+        emit Deposited(msg.sender, token, encryptedAmount);
     }
 
     /// @notice Users withdraw funds with a signed message from the TEE
     function withdrawTokensWithSignature(
         address user,
         address token,
-        uint256 amount,
+        bytes calldata encryptedAmount,
         bytes calldata signature
-    ) external {
-        bytes32 leaf = keccak256(abi.encodePacked(user, token, amount));
+    ) external nonReentrant {
+        if (token == address(0)) revert InvalidToken();
+        if (user == address(0)) revert InvalidToken();
+
+        bytes32 leaf = keccak256(abi.encodePacked(user, token, encryptedAmount));
         bytes32 ethHash = MessageHashUtils.toEthSignedMessageHash(leaf);
         address recovered = ECDSA.recover(ethHash, signature);
-        require(recovered == trustedSigner, "Invalid TEE signature");
+        
+        if (recovered != trustedSigner) revert InvalidSignature();
 
         ClaimInfo storage claim = _claims[leaf];
-        require(!claim.hasClaimed, "Already claimed");
+        if (claim.hasClaimed) revert AlreadyClaimed();
 
         claim.hasClaimed = true;
         claim.lastClaimTime = uint96(block.timestamp);
 
-        // ✅ Use safeTransfer
-        SafeERC20.safeTransfer(IERC20(token), user, amount);
+        ConfidentialERC20(token).transfer(user, encryptedAmount);
 
-        emit Withdrawn(user, token, amount);
+        emit Withdrawn(user, token, encryptedAmount);
+    }
+
+    /// @notice Emergency function to recover stuck tokens
+    function recoverTokens(address token, address to) external onlyOwner {
+        if (to == address(0)) revert InvalidToken();
+        euint256 balance = ConfidentialERC20(token).balanceOf(address(this));
+        ConfidentialERC20(token).transferFrom(address(this), to, balance);
     }
 }

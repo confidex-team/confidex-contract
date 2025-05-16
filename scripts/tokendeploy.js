@@ -3,8 +3,8 @@ const hre = require("hardhat")
 async function main() {
   const [account] = await hre.viem.getWalletClients()
   const initialSupply = 1000000000000000000000000
-  const name = "cUSDC"
-  const symbol = "cUSDC"
+  const name = "COMFY"
+  const symbol = "cCMF"
   const confiToken = await hre.viem.deployContract("ConfidentialERC20", [
     name, // name
     symbol, // symbol

@@ -38,19 +38,20 @@ contract Confidex is Ownable2Step, ReentrancyGuard {
         
         euint256 encryptedZero = e.asEuint256(0);
         euint256 amount = e.newEuint256(encryptedAmount, msg.sender);
+        
+        // Check if amount > 0
         ebool isValidAmount = e.gt(amount, encryptedZero);
         e.allow(isValidAmount, address(this));
-
-        // Use e.select to handle the entire flow
-        euint256 transferAmount = e.select(isValidAmount, amount, encryptedZero);
-        e.allow(transferAmount, address(this));
-        e.allow(transferAmount, msg.sender);
-        e.allow(transferAmount, TRUSTED_SIGNER);
-
-        // If amount is zero, revert
-        ebool isZero = e.eq(transferAmount, encryptedZero);
+        
+        // If amount is not greater than zero, revert
+        ebool isZero = e.eq(amount, encryptedZero);
         e.allow(isZero, address(this));
-        e.select(isZero, e.asEuint256(0), amount);
+        e.select(isZero, e.asEuint256(0), amount);  // This will revert if isZero is true
+        
+        // If we get here, amount is valid, proceed with transfer
+        e.allow(amount, address(this));
+        e.allow(amount, msg.sender);
+        e.allow(amount, TRUSTED_SIGNER);
 
         ConfidentialERC20(token).transferFrom(
             msg.sender,
